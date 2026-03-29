@@ -1,52 +1,35 @@
-import React, { useState, useEffect } from 'react'
-import QueryPanel from './components/QueryPanel.jsx'
-import ConflictPanel from './components/ConflictPanel.jsx'
-import DecisionPanel from './components/DecisionPanel.jsx'
-import StreamOutput from './components/StreamOutput.jsx'
+import React, { useState } from 'react'
+import InputPanel from './components/InputPanel.jsx'
+import StepsPanel from './components/StepsPanel.jsx'
+import OutputPanel from './components/OutputPanel.jsx'
 
 const API = 'http://localhost:8000'
 
-const DEFAULT_FORM = {
-  query: '',
-  task: 'rag',
-  user_preferred_model: 'qwen-plus',
-  max_latency_tier: 3,
-  max_cost_tier: 3,
-  privacy_required: false,
-  weight_accuracy: 8,
-  weight_speed: 6,
-  weight_cost: 5,
-  weight_privacy: 4,
+const INITIAL_STATE = {
+  step: null,          // null | 'scraping' | 'conflicts' | 'resolving' | 'done' | 'error'
+  stepMessage: '',
+  products: [],
+  conflicts: [],
+  reasoning: '',
+  error: '',
 }
 
 export default function App() {
-  const [form, setForm] = useState(DEFAULT_FORM)
-  const [models, setModels] = useState({})
-  const [tasks, setTasks] = useState({})
-  const [resolution, setResolution] = useState(null)
-  const [streamTokens, setStreamTokens] = useState('')
+  const [preference, setPreference] = useState('')
+  const [constraints, setConstraints] = useState('')
+  const [state, setState] = useState(INITIAL_STATE)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetch(`${API}/models`).then(r => r.json()).then(setModels)
-    fetch(`${API}/tasks`).then(r => r.json()).then(setTasks)
-  }, [])
-
-  const handleChange = (key, val) => setForm(f => ({ ...f, [key]: val }))
-
-  const handleRun = async () => {
-    if (!form.query.trim()) { setError('Enter a query first'); return }
-    setError('')
+  const handleResolve = async () => {
+    if (!preference.trim() || !constraints.trim()) return
     setLoading(true)
-    setResolution(null)
-    setStreamTokens('')
+    setState(INITIAL_STATE)
 
     try {
-      const res = await fetch(`${API}/run`, {
+      const res = await fetch(`${API}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ preference, constraints }),
       })
 
       const reader = res.body.getReader()
@@ -55,53 +38,77 @@ export default function App() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
+
+        const text = decoder.decode(value)
+        const lines = text.split('\n').filter(l => l.startsWith('data: '))
+
         for (const line of lines) {
-          const event = JSON.parse(line.slice(6))
-          if (event.type === 'resolution') setResolution(event)
-          else if (event.type === 'token') setStreamTokens(t => t + event.content)
+          try {
+            const event = JSON.parse(line.slice(6))
+
+            if (event.type === 'step') {
+              setState(s => ({ ...s, step: event.step, stepMessage: event.message }))
+            } else if (event.type === 'products') {
+              setState(s => ({ ...s, products: event.data }))
+            } else if (event.type === 'conflicts') {
+              setState(s => ({ ...s, conflicts: event.data }))
+            } else if (event.type === 'token') {
+              setState(s => ({ ...s, reasoning: s.reasoning + event.content }))
+            } else if (event.type === 'done') {
+              setState(s => ({ ...s, step: 'done' }))
+              setLoading(false)
+            } else if (event.type === 'error') {
+              setState(s => ({ ...s, step: 'error', error: event.message }))
+              setLoading(false)
+            }
+          } catch (_) {}
         }
       }
     } catch (e) {
-      setError('API error: ' + e.message)
-    } finally {
+      setState(s => ({ ...s, step: 'error', error: e.message }))
       setLoading(false)
     }
   }
 
+  const hasOutput = state.conflicts.length > 0 || state.reasoning
+
   return (
     <div className="app">
       <header className="app-header">
-        <div className="header-left">
+        <div className="header-inner">
           <span className="logo-tag">MELLM</span>
-          <h1>Multi-Context Conflict Resolver</h1>
-        </div>
-        <div className="header-right">
-          <span className="subtitle">Route intelligently. Justify every decision.</span>
+          <div>
+            <h1>Multi-Context Conflict Resolver</h1>
+            <p className="header-sub">Real preferences. Real market data. Real conflicts. Resolved.</p>
+          </div>
         </div>
       </header>
 
       <main className="app-main">
-        <div className="panel-grid">
-          <QueryPanel
-            form={form}
-            models={models}
-            tasks={tasks}
-            onChange={handleChange}
-            onRun={handleRun}
-            loading={loading}
-            error={error}
-          />
-          <ConflictPanel resolution={resolution} loading={loading} />
-          <DecisionPanel resolution={resolution} loading={loading} />
-        </div>
+        <InputPanel
+          preference={preference}
+          constraints={constraints}
+          onPreferenceChange={setPreference}
+          onConstraintsChange={setConstraints}
+          onResolve={handleResolve}
+          loading={loading}
+        />
 
-        {(streamTokens || (loading && resolution)) && (
-          <StreamOutput
-            tokens={streamTokens}
-            modelName={resolution?.winner_name}
-            loading={loading && !streamTokens}
+        {(loading || state.step) && (
+          <StepsPanel
+            currentStep={state.step}
+            stepMessage={state.stepMessage}
+            productCount={state.products.length}
+          />
+        )}
+
+        {hasOutput && (
+          <OutputPanel
+            conflicts={state.conflicts}
+            reasoning={state.reasoning}
+            loading={loading}
+            done={state.step === 'done'}
+            error={state.error}
           />
         )}
       </main>
