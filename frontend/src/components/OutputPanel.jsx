@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import ChatPanel from './ChatPanel.jsx'
 
 const SEVERITY_COLOR = { hard: '#E24B4A', soft: '#EF9F27' }
 const CONSTRAINT_LABELS = {
@@ -107,9 +108,22 @@ export default function OutputPanel({ conflicts, reasoning, loading, done, error
             <div className="reasoning-text">
               {reasoning.split('\n').map((line, i) => {
                 const isBestChoice = line.toUpperCase().startsWith('BEST CHOICE:')
+                
+                let productUrl = null
+                if (isBestChoice && winnerName) {
+                  const winningConflict = conflicts.find(ev => ev.product_title.toLowerCase().includes(winnerName.slice(0, 20)))
+                  productUrl = winningConflict?.product_url
+                }
+
                 return (
                   <div key={i} className={isBestChoice ? 'best-choice-highlight' : 'reasoning-line'}>
-                    {line}
+                    {isBestChoice && productUrl && productUrl !== '#' ? (
+                      <>
+                        BEST CHOICE: <a href={productUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>{line.replace(/^BEST CHOICE:\s*/i, '')}</a>
+                      </>
+                    ) : (
+                      line
+                    )}
                   </div>
                 )
               })}
@@ -123,6 +137,11 @@ export default function OutputPanel({ conflicts, reasoning, loading, done, error
         <div className="error-box">
           <strong>Error:</strong> {error}
         </div>
+      )}
+
+      {/* Follow-up Chatbot */}
+      {done && reasoning && !error && (
+        <ChatPanel conflicts={conflicts} reasoning={reasoning} />
       )}
     </div>
   )

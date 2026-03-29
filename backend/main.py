@@ -12,7 +12,7 @@ load_dotenv()
 
 from scraper import scrape_products
 from conflict_engine import parse_constraints, parse_preferences, evaluate_products
-from llm_client import build_resolution_prompt, stream_resolution
+from llm_client import build_resolution_prompt, stream_resolution, stream_chat
 
 app = FastAPI(title="MOELLM Conflict Resolver")
 
@@ -27,6 +27,14 @@ app.add_middleware(
 class ResolveRequest(BaseModel):
     preference: str = Field(..., min_length=5)
     constraints: str = Field(..., min_length=5)
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+    context: str
 
 
 @app.get("/health")
@@ -68,6 +76,7 @@ async def resolve(req: ResolveRequest):
                 conflicts_payload.append({
                     "product_title": ev.product["title"][:60],
                     "product_price": ev.product["price"],
+                    "product_url": ev.product.get("url", "#"),
                     "passes": ev.passes_hard_constraints,
                     "match_score": ev.match_score,
                     "conflicts": [
@@ -103,3 +112,21 @@ async def resolve(req: ResolveRequest):
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    """Endpoint for follow-up chatbot."""
+    async def event_stream():
+        try:
+            # Convert ChatMessage models to dicts for the LLM client
+            messages = [{"role": m.role, "content": m.content} for m in req.messages]
+            
+            async for token in stream_chat(messages, req.context):
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+

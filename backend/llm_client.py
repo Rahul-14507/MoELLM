@@ -79,3 +79,30 @@ async def stream_resolution(prompt: str) -> AsyncGenerator[str, None]:
         delta = chunk.choices[0].delta.content
         if delta:
             yield delta
+
+CHAT_SYSTEM_PROMPT = """You are MOLLM, a helpful, direct, and concise AI assistant. 
+You are answering follow-up questions from a user about a recommendation you just made.
+You must be focused on explaining your choice or considering the alternatives in the context.
+
+Here is the context of the recommendation and the evaluated products:
+{context}
+
+Answer the user's questions based primarily on this context. Be concise, direct, and conversational."""
+
+async def stream_chat(messages: list[dict], context: str) -> AsyncGenerator[str, None]:
+    client = get_client()
+    sys_prompt = {"role": "system", "content": CHAT_SYSTEM_PROMPT.format(context=context)}
+    
+    stream = await client.chat.completions.create(
+        model=MODEL,
+        messages=[sys_prompt] + messages,
+        stream=True,
+        max_tokens=600,
+        temperature=0.5,
+    )
+    async for chunk in stream:
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta
