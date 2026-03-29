@@ -27,7 +27,7 @@ MoELLM is a sophisticated routing and conflict resolution engine designed to opt
 
 ```bash
 MoELLM/
-├── mellm-resolver/
+├── moellm-resolver/
 │   ├── backend/          # FastAPI server and resolution logic
 │   │   ├── main.py       # API endpoints
 │   │   ├── resolver.py   # Routing & penalty logic
@@ -49,7 +49,7 @@ MoELLM/
 ### Backend Setup
 1. Navigate to the backend directory:
    ```bash
-   cd mellm-resolver/backend
+   cd moellm-resolver/backend
    ```
 2. Create and activate a virtual environment:
    ```bash
@@ -60,7 +60,7 @@ MoELLM/
    ```bash
    pip install -r requirements.txt
    ```
-4. Create a `.env` file in `mellm-resolver/` with your API key:
+4. Create a `.env` file in `moellm-resolver/` with your API key:
    ```env
    FEATHERLESS_API_KEY=your_key_here
    ```
@@ -72,7 +72,7 @@ MoELLM/
 ### Frontend Setup
 1. Navigate to the frontend directory:
    ```bash
-   cd mellm-resolver/frontend
+   cd moellm-resolver/frontend
    ```
 2. Install dependencies:
    ```bash

@@ -14,7 +14,7 @@ from scraper import scrape_products
 from conflict_engine import parse_constraints, parse_preferences, evaluate_products
 from llm_client import build_resolution_prompt, stream_resolution
 
-app = FastAPI(title="MELLM Conflict Resolver")
+app = FastAPI(title="MOELLM Conflict Resolver")
 
 app.add_middleware(
     CORSMiddleware,

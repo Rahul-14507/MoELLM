@@ -76,7 +76,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-inner">
-          <span className="logo-tag">MELLM</span>
+          <span className="logo-tag">MOELLM</span>
           <div>
             <h1>Multi-Context Conflict Resolver</h1>
             <p className="header-sub">Real preferences. Real market data. Real conflicts. Resolved.</p>
