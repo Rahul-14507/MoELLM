@@ -19,8 +19,8 @@ export default function OutputPanel({ conflicts, reasoning, loading, done, error
   const hardConflictCount = conflicts.reduce((sum, ev) =>
     sum + ev.conflicts.filter(c => c.severity === 'hard').length, 0)
 
-  // Detect winning product from "FINAL RECOMMENDATION:" in reasoning
-  const winnerMatch = reasoning.match(/FINAL RECOMMENDATION:\s*(.+)/i)
+  // Detect winning product from "BEST CHOICE:" in reasoning
+  const winnerMatch = reasoning.match(/BEST CHOICE:\s*(.+)/i)
   const winnerName = winnerMatch ? winnerMatch[1].trim().toLowerCase() : null
 
   const copyVerdict = () => {
@@ -104,7 +104,16 @@ export default function OutputPanel({ conflicts, reasoning, loading, done, error
             {!reasoning && loading && (
               <span className="reasoning-placeholder">Waiting for Qwen…</span>
             )}
-            <pre className="reasoning-text">{reasoning}</pre>
+            <div className="reasoning-text">
+              {reasoning.split('\n').map((line, i) => {
+                const isBestChoice = line.toUpperCase().startsWith('BEST CHOICE:')
+                return (
+                  <div key={i} className={isBestChoice ? 'best-choice-highlight' : 'reasoning-line'}>
+                    {line}
+                  </div>
+                )
+              })}
+            </div>
             {loading && reasoning && <span className="cursor">▋</span>}
           </div>
         </div>

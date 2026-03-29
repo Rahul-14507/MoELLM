@@ -190,7 +190,24 @@ textarea::placeholder { color: var(--text-dim); }
   min-height: 100px; max-height: 380px; overflow-y: auto;
 }
 .reasoning-placeholder { color: var(--text-dim); font-size: 13px; }
-.reasoning-text { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+.reasoning-text { font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--text); }
+.best-choice-highlight {
+  background: var(--accent-glow);
+  color: var(--accent);
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 3px solid var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(55,138,221,0.08);
+  line-height: 1.4;
+}
+.reasoning-line {
+  margin-bottom: 8px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
 .cursor { animation: blink 0.8s infinite; font-family: var(--mono); }
 
 .error-box {
