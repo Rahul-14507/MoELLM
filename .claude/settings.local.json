@@ -4,7 +4,12 @@
       "Bash(pip install:*)",
       "Bash(npm install:*)",
       "Bash(python -c \"from main import app; from resolver import resolve; from models_config import MODELS; print\\(''Backend imports OK, models:'', list\\(MODELS.keys\\(\\)\\)\\)\")",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python -c \"from brightdata import BrightDataClient; print\\(''SDK import OK''\\)\")",
+      "Bash(pip show:*)",
+      "Bash(python -c \"from tavily import AsyncTavilyClient; print\\(''''AsyncTavilyClient OK''''\\)\")"
     ]
   }
 }
